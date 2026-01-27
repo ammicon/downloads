@@ -24,7 +24,7 @@ process_image() {
     file_extension="${f##*.}"
     for format in "${IMAGE_FORMATS[@]}"; do
         if [[ "$file_extension" == "$format" ]]; then
-            IMAGE_GUID=$(uuidgen)
+            IMAGE_GUID=$(basename "$f" ".$file_extension")
             IMAGE_PATH="$BACKGROUND_FOLDER/$IMAGE_GUID.png"
             IMAGE_THUMB_PATH="$BACKGROUND_FOLDER/${IMAGE_GUID}_thumb.png"
             
