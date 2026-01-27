@@ -1,6 +1,6 @@
 # --- KONFIGURATION ---
-$VersionUrl = "https://raw.githubusercontent.com/ammicon/downloads/main/teamsbackgrounds/version.txt"
-$ZipUrl = "https://raw.githubusercontent.com/ammicon/downloads/main/teamsbackgrounds/ammicon_teamsbackgrounds.zip" # Nutze den RAW-Link
+$VersionUrl = "https://github.com/ammicon/downloads/raw/refs/heads/main/teamsbackgrounds/version.txt"
+$ZipUrl = "https://github.com/ammicon/downloads/raw/refs/heads/main/teamsbackgrounds/ammicon_teamsbackgrounds.zip" # Nutze den RAW-Link
 $TargetDir = "$env:LOCALAPPDATA\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\Backgrounds\Uploads"
 $VersionFile = Join-Path $TargetDir "version.txt" # Lokale Marker-Datei
 
