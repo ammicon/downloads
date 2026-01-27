@@ -4,7 +4,7 @@
 CURRENT_USER=$( echo "show State:/Users/ConsoleUser" | scutil | awk '/Name :/ { print $3 }' )
 USER_HOME=$(dscl . -read /users/${CURRENT_USER} NFSHomeDirectory | cut -d " " -f 2)
 TMPDIR=$(mktemp -d)
-BACKGROUND_FOLDER="$USER_HOME/Library/Containers/com.microsoft.teams2/Data/Library/Application Support/Microsoft/MSTeams/Backgrounds/Uploads"
+BACKGROUND_FOLDER="$USER_HOME/Library/Containers/com.microsoft.teams2/Data/Library/Application Support/Microsoft/MSTeams/Backgrounds/Uploads/"
 
 ### Required settings ###
 BACKGROUND_URL="https://github.com/ammicon/downloads/raw/refs/heads/main/teamsbackgrounds/ammicon_teamsbackgrounds.zip"
@@ -12,29 +12,14 @@ VERSION_URL="https://github.com/ammicon/downloads/raw/refs/heads/main/teamsbackg
 
 ### Optional settings ###
 IMAGE_FORMATS=("png" "jpg" "jpeg")
-RUN_CHECK_PATH="$USER_HOME/Library/Application Support/.ammicon_teams_version"
+RUN_CHECK_PATH="$USER_HOME/Library/Containers/com.microsoft.teams2/Data/Library/Application Support/Microsoft/MSTeams/Backgrounds/Uploads/version.txt"
 
 log_message() {
     echo "[$(date)] - $1"
 }
 
-# --- Versionsprüfung ---
-REMOTE_VERSION=$(curl -sL "$VERSION_URL" | tr -d '[:space:]')
-if [ -f "$RUN_CHECK_PATH" ]; then
-    LOCAL_VERSION=$(cat "$RUN_CHECK_PATH" | tr -d '[:space:]')
-else
-    LOCAL_VERSION="0"
-fi
-
-if [ "$REMOTE_VERSION" = "$LOCAL_VERSION" ] && [ -n "$REMOTE_VERSION" ]; then
-    log_message "Version $LOCAL_VERSION ist aktuell. Beende Skript."
-    rm -rf "$TMPDIR"
-    exit 0
-fi
-
-log_message "Update gefunden: Lokal ($LOCAL_VERSION) -> Remote ($REMOTE_VERSION)"
-
 process_image() {
+
     local f="$1"
     file_extension="${f##*.}"
     for format in "${IMAGE_FORMATS[@]}"; do
@@ -61,9 +46,25 @@ process_image() {
     done
 }
 
+# --- Versionsprüfung ---
+REMOTE_VERSION=$(curl -sL "$VERSION_URL" | tr -d '[:space:]')
+if [ -f "$RUN_CHECK_PATH" ]; then
+    LOCAL_VERSION=$(cat "$RUN_CHECK_PATH" | tr -d '[:space:]')
+else
+    LOCAL_VERSION="0"
+fi
+log_message "$RUN_CHECK_PATH"
+if [ "$REMOTE_VERSION" = "$LOCAL_VERSION" ] && [ -n "$REMOTE_VERSION" ]; then
+    log_message "Version $LOCAL_VERSION ist aktuell. Beende Skript."
+    #Clean up
+    rm -rf "$TMPDIR"
+    exit 0
+fi
+
 # Check Teams
-if [ ! -d "/Applications/Microsoft Teams (work or school).app" ]; then
+if [ ! -d "/Applications/Microsoft Teams.app" ]; then
     log_message "Microsoft Teams nicht installiert"
+    #Clean up
     rm -rf "$TMPDIR"
     exit 1
 fi
@@ -72,8 +73,9 @@ if [ ! -d "$BACKGROUND_FOLDER" ]; then
     mkdir -p "$BACKGROUND_FOLDER"
 fi
 
+# Download image
 cd "$TMPDIR"
-curl -f -s -O "$BACKGROUND_URL"
+curl -L -f -s -O "$BACKGROUND_URL"
 
 if [ $? == 0 ]; then
     for f in *; do
@@ -90,11 +92,12 @@ if [ $? == 0 ]; then
     # Speichere die neue Version lokal, damit beim nächsten Lauf "aktuell" gemeldet wird
     echo "$REMOTE_VERSION" > "$RUN_CHECK_PATH"
     log_message "Version $REMOTE_VERSION erfolgreich installiert und gespeichert."
-
+    #Clean up
     rm -rf "$TMPDIR"
     exit 0
 else
     log_message "Download fehlgeschlagen"
+    #Clean up
     rm -rf "$TMPDIR"
     exit 1
 fi
