@@ -19,7 +19,7 @@ try {
 
     # 3. Bildverarbeitung (wie bisher)
     Add-Type -AssemblyName System.Drawing
-    $Images = Get-ChildItem -Path $TempExtract -Include *.png, *.jpg, *.jpeg -File
+    $Images = Get-ChildItem -Path $TempExtract -File | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' }
     foreach ($Image in $Images) {
         $BaseName = $Image.BaseName
         $Bmp = [System.Drawing.Bitmap]::FromFile($Image.FullName)
