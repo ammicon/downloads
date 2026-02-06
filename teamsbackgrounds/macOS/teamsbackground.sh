@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ### Do not modify ###
 CURRENT_USER=$( echo "show State:/Users/ConsoleUser" | scutil | awk '/Name :/ { print $3 }' )
 USER_HOME=$(dscl . -read /users/${CURRENT_USER} NFSHomeDirectory | cut -d " " -f 2)
@@ -21,26 +20,41 @@ log_message() {
 process_image() {
 
     local f="$1"
+    # Prüfe ob die Datei existiert
+    if [ ! -f "$f" ]; then
+        return
+    fi
+    
     file_extension="${f##*.}"
+    filename_without_ext=$(basename "$f" ".$file_extension")
+    
     for format in "${IMAGE_FORMATS[@]}"; do
         if [[ "$file_extension" == "$format" ]]; then
-            IMAGE_GUID=$(basename "$f" ".$file_extension")
+            IMAGE_GUID="$filename_without_ext"
             IMAGE_PATH="$BACKGROUND_FOLDER/$IMAGE_GUID.png"
             IMAGE_THUMB_PATH="$BACKGROUND_FOLDER/${IMAGE_GUID}_thumb.png"
             
-            if [[ $f != *.png ]]; then
-                sips -s format png "$f" -o "$f.png" > /dev/null
+            # Erstelle temporäre Kopie im aktuellen Verzeichnis
+            temp_file="$IMAGE_GUID.$file_extension"
+            cp "$f" "$temp_file"
+            
+            if [[ "$temp_file" != *.png ]]; then
+                sips -s format png "$temp_file" -o "$temp_file.png" > /dev/null
+                rm "$temp_file"
+                temp_file="$temp_file.png"
             fi
 
-            mv "$f" "$IMAGE_GUID"
-            cp "$IMAGE_GUID" "$IMAGE_PATH"
-            cp "$IMAGE_GUID" "$IMAGE_THUMB_PATH"
+            cp "$temp_file" "$IMAGE_PATH"
+            cp "$temp_file" "$IMAGE_THUMB_PATH"
 
             sips -Z 186 "$IMAGE_THUMB_PATH" -o "$IMAGE_THUMB_PATH" > /dev/null 2>&1
             width=$(sips -g pixelWidth "$IMAGE_THUMB_PATH" | awk '/pixelWidth:/{print $2}')
             crop=$((($width - 238) / 2))
             sips -z 186 238 "$IMAGE_THUMB_PATH" -o "$IMAGE_THUMB_PATH" > /dev/null 2>&1
 
+            # Aufräumen
+            rm -f "$temp_file"
+            
             log_message "Hintergrund gesetzt: $IMAGE_GUID"
         fi
     done
@@ -81,8 +95,9 @@ if [ $? == 0 ]; then
     for f in *; do
         if [[ $f == *.zip ]]; then
             unzip -q "$f"
-            for extracted in *; do
-                process_image "$extracted"
+            # Finde rekursiv alle Bilddateien und ignoriere __MACOSX Ordner
+            find . -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" | grep -v "__MACOSX" | while read -r image_file; do
+                process_image "$image_file"
             done
             continue
         fi
